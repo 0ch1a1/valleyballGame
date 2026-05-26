@@ -64,6 +64,7 @@ jobs:
 
       - name: Build Unity (WebGL)
         id: unity_build
+        continue-on-error: true
         uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
@@ -76,6 +77,19 @@ jobs:
           buildsPath: deploy
           # Force Unity to write logs to stdout so we can read them even when the build fails.
           customParameters: -logFile - -stackTraceLogType Full
+
+      - name: Print unity-builder outputs
+        if: always()
+        shell: bash
+        run: |
+          echo "engineExitCode=${{ steps.unity_build.outputs.engineExitCode }}"
+          echo "engineExitMessage=${{ steps.unity_build.outputs.engineExitMessage }}"
+          echo "buildVersion=${{ steps.unity_build.outputs.buildVersion }}"
+          echo "androidVersionCode=${{ steps.unity_build.outputs.androidVersionCode }}"
+
+      - name: Fail if build failed
+        if: steps.unity_build.outputs.engineExitCode != '0'
+        run: exit 1
 
       - name: Dump Unity Editor log (tail)
         if: always()
