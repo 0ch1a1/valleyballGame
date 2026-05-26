@@ -74,8 +74,8 @@ jobs:
           targetPlatform: WebGL
           buildName: VolleyballGame
           buildsPath: deploy
-          # Force Unity to write logs into the repo so we can read/upload them.
-          customParameters: -logFile /github/workspace/VolleyballGame/Builds/Logs/Editor.log -stackTraceLogType Full
+          # Force Unity to write logs to stdout so we can read them even when the build fails.
+          customParameters: -logFile - -stackTraceLogType Full
 
       - name: Dump Unity Editor log (tail)
         if: always()
@@ -99,8 +99,7 @@ jobs:
             echo "--- tail $FOUND ---"
             tail -n 200 "$FOUND" || true
           else
-            echo "Unity Editor.log not found in expected locations."
-            find . -maxdepth 6 -type f -name 'Editor.log' -print || true
+            echo "Unity Editor.log not found in expected locations (this is OK when using -logFile -)."
           fi
 
       - name: Upload Unity logs
