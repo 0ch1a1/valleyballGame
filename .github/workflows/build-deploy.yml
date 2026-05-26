@@ -59,6 +59,7 @@ jobs:
             Library-${{ runner.os }}-
 
       - name: Build Unity (WebGL)
+        id: unity_build
         uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
@@ -69,6 +70,31 @@ jobs:
           targetPlatform: WebGL
           buildName: VolleyballGame
           buildsPath: deploy
+          # Force Unity to write logs into the repo so we can read/upload them.
+          customParameters: -logFile Builds/Logs/Editor.log -stackTraceLogType Full
+
+      - name: Dump Unity Editor log (tail)
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          LOG="VolleyballGame/Builds/Logs/Editor.log"
+          if [ -f "$LOG" ]; then
+            echo "--- tail $LOG ---"
+            tail -n 200 "$LOG" || true
+          else
+            echo "Unity Editor.log not found at $LOG"
+            find VolleyballGame -maxdepth 4 -type f -name 'Editor.log' -print || true
+          fi
+
+      - name: Upload Unity logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-logs
+          path: |
+            VolleyballGame/Builds/Logs/Editor.log
+            VolleyballGame/Builds/Logs/Player.log
 
       - name: Copy build output to deploy root
         run: |
