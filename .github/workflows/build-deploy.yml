@@ -58,6 +58,10 @@ jobs:
           restore-keys: |
             Library-${{ runner.os }}-
 
+      - name: Prepare Unity log folder
+        shell: bash
+        run: mkdir -p VolleyballGame/Builds/Logs
+
       - name: Build Unity (WebGL)
         id: unity_build
         uses: game-ci/unity-builder@v4
@@ -71,7 +75,7 @@ jobs:
           buildName: VolleyballGame
           buildsPath: deploy
           # Force Unity to write logs into the repo so we can read/upload them.
-          customParameters: -logFile Builds/Logs/Editor.log -stackTraceLogType Full
+          customParameters: -logFile /github/workspace/VolleyballGame/Builds/Logs/Editor.log -stackTraceLogType Full
 
       - name: Dump Unity Editor log (tail)
         if: always()
