@@ -78,13 +78,25 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          LOG="VolleyballGame/Builds/Logs/Editor.log"
-          if [ -f "$LOG" ]; then
-            echo "--- tail $LOG ---"
-            tail -n 200 "$LOG" || true
+          CANDIDATES=(
+            "VolleyballGame/Builds/Logs/Editor.log"
+            "Builds/Logs/Editor.log"
+          )
+
+          FOUND=""
+          for p in "${CANDIDATES[@]}"; do
+            if [ -f "$p" ]; then
+              FOUND="$p"
+              break
+            fi
+          done
+
+          if [ -n "$FOUND" ]; then
+            echo "--- tail $FOUND ---"
+            tail -n 200 "$FOUND" || true
           else
-            echo "Unity Editor.log not found at $LOG"
-            find VolleyballGame -maxdepth 4 -type f -name 'Editor.log' -print || true
+            echo "Unity Editor.log not found in expected locations."
+            find . -maxdepth 6 -type f -name 'Editor.log' -print || true
           fi
 
       - name: Upload Unity logs
@@ -93,8 +105,8 @@ jobs:
         with:
           name: unity-logs
           path: |
-            VolleyballGame/Builds/Logs/Editor.log
-            VolleyballGame/Builds/Logs/Player.log
+            VolleyballGame/Builds/Logs/**
+            Builds/Logs/**
 
       - name: Copy build output to deploy root
         run: |
