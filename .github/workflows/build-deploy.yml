@@ -116,6 +116,15 @@ jobs:
             echo "Unity Editor.log not found in expected locations (this is OK when using -logFile -)."
           fi
 
+      - name: Locate Unity logs
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "--- searching for log-ish files (depth<=8) ---"
+          find . -maxdepth 8 -type f \( -iname '*editor*.log' -o -iname '*player*.log' -o -iname 'Editor.log' -o -iname 'Player.log' -o -iname '*.log' \) \
+            -printf '%p\n' | head -n 200 || true
+
       - name: Upload Unity logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -124,6 +133,8 @@ jobs:
           path: |
             VolleyballGame/Builds/Logs/**
             Builds/Logs/**
+            **/Editor.log
+            **/Player.log
 
       - name: Copy build output to deploy root
         run: |
