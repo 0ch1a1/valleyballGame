@@ -1,0 +1,63 @@
+name: Build to deploy folder
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-commit:
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Ensure deploy folder exists
+        run: mkdir -p deploy
+
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-${{ runner.os }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-${{ runner.os }}-
+
+      - name: Build Unity (WebGL)
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          targetPlatform: WebGL
+          buildName: VolleyballGame
+          buildsPath: deploy
+
+      - name: Copy build output to deploy root
+        run: |
+          set -eux
+          shopt -s dotglob nullglob
+          rm -rf deploy/output_tmp
+          mkdir -p deploy/output_tmp
+          cp -a deploy/WebGL/VolleyballGame/* deploy/output_tmp/
+          find deploy -mindepth 1 -maxdepth 1 ! -name output_tmp -exec rm -rf {} +
+          cp -a deploy/output_tmp/* deploy/
+          rm -rf deploy/output_tmp
+
+      - name: Commit deploy artifacts
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "ci: update deploy artifacts [skip ci]"
+          file_pattern: deploy/**
